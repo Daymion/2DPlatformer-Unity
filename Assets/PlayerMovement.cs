@@ -4,20 +4,102 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    // Start is called before the first frame update
+
+    private Rigidbody2D rb;
+
+    // Left and right movement variables
+    public float moveSpeed;
+    private int moveDirection = 0;
+    private bool moving = false;
+
+    // Jump variables
+    public int jumpForce;
+    private bool onGround = true;
+    private bool isJump = false;
+
     void Start()
     {
-        
+        rb = GetComponent<Rigidbody2D>();
     }
 
     private void FixedUpdate()
     {
-        
+        MovementAction();
+        JumpAction();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        
+        MovementInput();
+        JumpInput();
+    }
+
+    private void OnCollisionEnter2D(Collision2D other)
+    {
+        // Reset the jump variables
+        if (other.gameObject.tag == "Ground")
+        {
+            onGround = true;
+            isJump = false;
+        }
+    }
+
+    /**
+     * Get the direction of the player movement and transition between moving and not
+     */
+    private void MovementInput()
+    {
+        if (Input.GetKey(KeyCode.RightArrow))
+        {
+            moveDirection = 1;
+            moving = true;
+        }
+        else if (Input.GetKey(KeyCode.LeftArrow))
+        {
+            moveDirection = -1;
+            moving = true;
+        }
+        else
+        {
+            moving = false;
+        }
+    }
+
+    /**
+     * Change the velocity of the player based on direction and whether they are moving or not
+     */
+    private void MovementAction()
+    {
+        if (moving)
+        {
+            rb.velocity = new Vector3(moveSpeed * moveDirection, rb.velocity.y);
+        }
+        else
+        {
+            rb.velocity = new Vector3(0, rb.velocity.y);
+        }
+    }
+
+    /**
+     * Get the key input for the jump
+     */
+    private void JumpInput()
+    {
+        if (Input.GetKeyDown(KeyCode.Space) && onGround == true && isJump == false)
+        {
+            isJump = true;
+        }
+    }
+
+    /**
+     * Apply the jump force to the player
+     */
+    private void JumpAction()
+    {
+        if (onGround == true && isJump == true)
+        {
+            rb.AddForce(new Vector3(0, jumpForce));
+            onGround = false;
+        }
     }
 }
