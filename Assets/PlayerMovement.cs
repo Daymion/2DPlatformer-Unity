@@ -11,6 +11,7 @@ public class PlayerMovement : MonoBehaviour
     public float moveSpeed;
     private int moveDirection = 0;
     private bool moving = false;
+    private bool airMoving = false;
 
     // Jump variables
     public int jumpForce;
@@ -18,9 +19,13 @@ public class PlayerMovement : MonoBehaviour
     private bool isJump = false;
 
     // Wall jump variables
-    public float wallJumpSpeed;
-    private bool onWall = false;
+    public float wallJumpForce;
+    private float wallJumpDirection = 0;
     private bool isWallJump = false;
+    private RaycastHit2D rightSide;
+    private float distanceRight;
+    private RaycastHit2D leftSide;
+    private float distanceLeft;
 
     void Start()
     {
@@ -29,6 +34,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        WallJumpRays();
         MovementAction();
         JumpAction();
         WallJumpAction();
@@ -43,27 +49,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D other)
     {
-        // Reset the jump variables
+        // Reset the jump and wall jump booleans
         if (other.gameObject.tag == "Ground")
         {
             onGround = true;
             isJump = false;
             isWallJump = false;
-        }
-        // Change the wall jump variables
-        if (other.gameObject.tag == "Wall")
-        {
-            onWall = true;
-            isWallJump = false;
-        }
-    }
-
-    private void OnCollisionExit2D(Collision2D other)
-    {
-        // Reset the wall jump variables
-        if (other.gameObject.tag == "Wall")
-        {
-            onWall = false;
+            airMoving = false;
         }
     }
 
@@ -72,12 +64,12 @@ public class PlayerMovement : MonoBehaviour
      */
     private void MovementInput()
     {
-        if (Input.GetKey(KeyCode.RightArrow) && isWallJump == false)
+        if (Input.GetKey(KeyCode.RightArrow))
         {
             moveDirection = 1;
             moving = true;
         }
-        else if (Input.GetKey(KeyCode.LeftArrow) && isWallJump == false)
+        else if (Input.GetKey(KeyCode.LeftArrow))
         {
             moveDirection = -1;
             moving = true;
@@ -89,20 +81,21 @@ public class PlayerMovement : MonoBehaviour
     }
 
     /**
-     * Change the velocity of the player based on direction and whether they are moving or not
-     * Lock the players movement when wall jumping
+     * Change the velocity of the player based on direction
+     * Stop the velocity of the player on the ground
+     * Stop the velocity of the player in the air based on circumstances
      */
     private void MovementAction()
     {        
-        if (isWallJump == true)
-        {
-            rb.velocity = new Vector3(wallJumpSpeed * -moveDirection, rb.velocity.y);
-        }
-        else if (moving == true && isWallJump == false)
+        if (moving == true)
         {
             rb.velocity = new Vector3(moveSpeed * moveDirection, rb.velocity.y);
         }
-        else
+        else if (moving == false && isWallJump == false && isJump == false)
+        {
+            rb.velocity = new Vector3(0, rb.velocity.y);
+        }
+        else if (moving == false && isJump == true && airMoving == true)
         {
             rb.velocity = new Vector3(0, rb.velocity.y);
         }
@@ -128,31 +121,61 @@ public class PlayerMovement : MonoBehaviour
         {
             rb.AddForce(new Vector3(0, jumpForce));
             onGround = false;
+            airMoving = true;
         }
     }
 
     /**
      * Get the input for the wall jump
-     * The player must be moving into the wall
      */
     private void WallJumpInput()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && onGround == false && isJump == true && onWall == true && isWallJump == false && moving == true)
+        if (Input.GetKeyDown(KeyCode.Space) && onGround == false && isJump == true)
         {
-            isWallJump = true;
+            if (distanceRight < 0.52 || distanceLeft < 0.52)
+            {
+                isWallJump = true;
+            }
         }
     }
 
     /**
-     * Apply the jump force to the player and change the velocity
+     * Apply the wall jump force to the player and change the velocity
      */
     private void WallJumpAction()
     {
-        if (onGround == false && isJump == true && onWall == true && isWallJump == true)
+        if (onGround == false && isJump == true && isWallJump == true)
         {
+            airMoving = false;
             rb.velocity = Vector3.zero;
-            rb.AddForce(new Vector3(0, jumpForce));
-            onWall = false;
+            rb.AddForce(new Vector3(wallJumpForce * wallJumpDirection, jumpForce));
+            isWallJump = false;
+        }
+    }
+
+    /**
+     * Check the distance between the player and the wall using rays
+     * Change the direction of the wall jump
+     */
+    private void WallJumpRays()
+    {
+        rightSide = Physics2D.Raycast(transform.position, Vector2.right);
+        if (rightSide.collider != null)
+        {
+            distanceRight = Mathf.Abs(rightSide.point.x - transform.position.x);
+            if (distanceRight < 0.52)
+            {
+                wallJumpDirection = -1;
+            }
+        }
+        leftSide = Physics2D.Raycast(transform.position, Vector2.left);
+        if (leftSide.collider != null)
+        {
+            distanceLeft = Mathf.Abs(leftSide.point.x - transform.position.x);
+            if (distanceLeft < 0.52)
+            {
+                wallJumpDirection = 1;
+            }
         }
     }
 }
