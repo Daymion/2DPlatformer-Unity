@@ -26,6 +26,7 @@ public class PlayerMovement : MonoBehaviour
     private float distanceRight;
     private RaycastHit2D leftSide;
     private float distanceLeft;
+    private bool onWall = false;
 
     void Start()
     {
@@ -56,6 +57,17 @@ public class PlayerMovement : MonoBehaviour
             isJump = false;
             isWallJump = false;
             airMoving = false;
+            onWall = false;
+        }
+
+        if (other.gameObject.tag == "Wall")
+        {
+            onWall = true;
+        }
+
+        if (other.gameObject.tag == "InvisibleWall")
+        {
+            onWall = false;
         }
     }
 
@@ -132,9 +144,10 @@ public class PlayerMovement : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space) && onGround == false && isJump == true)
         {
-            if (distanceRight < 0.52 || distanceLeft < 0.52)
+            if (distanceRight < 0.52 && onWall == true || distanceLeft < 0.52 && onWall == true)
             {
                 isWallJump = true;
+                onWall = false;
             }
         }
     }
