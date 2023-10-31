@@ -9,6 +9,7 @@ TagManager:
   - Enemy
   - DeathPlane
   - InvisibleWall
+  - Coin
   layers:
   - Default
   - TransparentFX
